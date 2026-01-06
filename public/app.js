@@ -207,6 +207,8 @@ async function saveConfig(e) {
     }
 
     // Update Local State
+    const previousConfig = JSON.parse(JSON.stringify(currentConfig)); // Backup state
+
     if (!currentConfig.scrape_configs) currentConfig.scrape_configs = [];
 
     if (editingJobIndex === -1) {
@@ -215,17 +217,32 @@ async function saveConfig(e) {
         currentConfig.scrape_configs[editingJobIndex] = newJob;
     }
 
-    await syncConfig();
-    closeModal();
+    const success = await syncConfig();
+    if (success) {
+        closeModal();
+    } else {
+        // Revert local state change if failed, or just keep it?
+        // Actually, if we want to "fix" it, we should probably not revert the UI form, but the local object 'currentConfig' 
+        // should probably reflect the 'attempted' state so if they click save again it works?
+        // Or better: fetchConfig() again to reset? 
+        // Use simple backup restore:
+        currentConfig = previousConfig;
+    }
 }
 
 async function deleteJob() {
     if (editingJobIndex === -1) return;
     if (!confirm('Apakah anda yakin ingin menghapus job ini?')) return;
 
+    const previousConfig = JSON.parse(JSON.stringify(currentConfig));
     currentConfig.scrape_configs.splice(editingJobIndex, 1);
-    await syncConfig();
-    closeModal();
+
+    const success = await syncConfig();
+    if (success) {
+        closeModal();
+    } else {
+        currentConfig = previousConfig;
+    }
 }
 
 async function syncConfig() {
@@ -239,18 +256,20 @@ async function syncConfig() {
         if (result.success) {
             showToast(result.message);
             renderJobs();
+            return true;
         } else {
             throw new Error(result.error);
         }
     } catch (error) {
         alert('Gagal menyimpan: ' + error.message);
+        return false;
     }
 }
 
 function showToast(msg) {
     elements.toast.textContent = msg;
     elements.toast.classList.remove('hidden');
-    setTimeout(() => elements.toast.classList.add('hidden'), 3000);
+    setTimeout(() => elements.toast.classList.add('hidden'), 5000); // 5 seconds for visibility
 }
 
 // --- Event Listeners ---
