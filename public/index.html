@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prometheus Config Manager</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Using Phosphor Icons for lightweight SVGs -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1><i class="ph ph-fire"></i> Prometheus Manager</h1>
+            <p>Kelola konfigurasi job dan target dengan mudah.</p>
+        </header>
+
+        <main id="job-list" class="job-grid">
+            <!-- Jobs will be rendered here -->
+        </main>
+
+        <button id="add-job-btn" class="fab" title="Tambah Job Baru">
+            <i class="ph ph-plus"></i>
+        </button>
+    </div>
+
+    <!-- Modal for Job Editing -->
+    <div id="job-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Edit Job</h2>
+                <button class="close-btn" id="close-modal"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="job-form">
+                    <div class="form-group">
+                        <label for="job-name">Nama Job</label>
+                        <input type="text" id="job-name" required placeholder="Contoh: node_exporter">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="scrape-interval">Interval Scrape (Detik)</label>
+                        <input type="text" id="scrape-interval" placeholder="Contoh: 15 (otomatis tambah 's')">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="metrics-path">Metrics Path (Opsional)</label>
+                        <input type="text" id="metrics-path" placeholder="Contoh: /metrics">
+                    </div>
+
+                    <div class="section-divider">
+                        <h3>Targets</h3>
+                        <button type="button" id="add-target-btn" class="btn-small btn-secondary"><i class="ph ph-plus"></i> Target</button>
+                    </div>
+                    <div id="targets-container" class="targets-list">
+                        <!-- Targets inputs will be here -->
+                    </div>
+
+                    <div class="section-divider">
+                        <div class="toggle-advanced">
+                            <h3>Pengaturan Lanjutan (Relabel)</h3>
+                            <label class="switch">
+                                <input type="checkbox" id="show-advanced">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div id="advanced-section" class="hidden">
+                        <div class="info-box">
+                            <i class="ph ph-info"></i> Masukkan konfigurasi relabel dalam format YAML.
+                        </div>
+                        <textarea id="relabel-config" rows="6" placeholder="relabel_configs: ..."></textarea>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" id="delete-job-btn" class="btn-danger hidden">Hapus Job</button>
+                        <button type="submit" class="btn-primary">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast hidden">Start</div>
+
+    <script src="app.js"></script>
+</body>
+</html>
