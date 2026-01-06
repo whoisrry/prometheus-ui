@@ -237,7 +237,7 @@ async function syncConfig() {
         });
         const result = await res.json();
         if (result.success) {
-            showToast('Konfigurasi berhasil disimpan!');
+            showToast(result.message);
             renderJobs();
         } else {
             throw new Error(result.error);
