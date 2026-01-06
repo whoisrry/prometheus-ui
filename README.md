@@ -42,7 +42,46 @@ A lightweight, user-friendly web interface to manage Prometheus configuration (`
 - **Targets**: Enter IP and Port separately.
 - **Advanced**: Enable "Pengaturan Lanjutan" to add `relabel_configs` (JSON format).
 
+### Relabel Config Example
+To use relabeling, enable "Pengaturan Lanjutan" and paste the JSON configuration. Example:
+```json
+[
+  {
+    "source_labels": [
+      "__address__"
+    ],
+    "target_label": "instance"
+  },
+  {
+    "source_labels": [
+      "__address__"
+    ],
+    "target_label": "__address__",
+    "replacement": "${1}:9100"
+  }
+]
+```
+
+## Running with PM2
+To keep the application running in the background and start automatically on boot:
+
+1.  **Install PM2**
+    ```bash
+    npm install pm2 -g
+    ```
+
+2.  **Start Application**
+    ```bash
+    pm2 start server.js --name prometheus-ui
+    ```
+
+3.  **Save & Startup**
+    ```bash
+    pm2 save
+    pm2 startup
+    ```
+
 ## Tech Stack
 - Backend: Node.js, Express, js-yaml
-- Frontend: HTML5, CSS3 (Glassmorphism), Vanilla JavaScript, Phosphor Icons
+- Frontend: HTML5, CSS3 (Material Design), Vanilla JavaScript, Phosphor Icons
 - Integration: Axios (for Prometheus API)
