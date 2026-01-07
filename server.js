@@ -18,7 +18,12 @@ const AUTH_USER = process.env.AUTH_USER || 'admin';
 const AUTH_PASS = process.env.AUTH_PASS || 'password';
 
 // Security Headers
-app.use(helmet());
+// Security Headers
+// Disable CSP and HSTS to allow plain HTTP usage (prevent 'upgrade-insecure-requests')
+app.use(helmet({
+    contentSecurityPolicy: false,
+    hsts: false,
+}));
 
 // CORS (Allow self)
 app.use(cors());
