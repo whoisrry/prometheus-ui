@@ -7,6 +7,11 @@ A lightweight, user-friendly web interface to manage Prometheus configuration (`
 - **Easy Management**: Add, Edit, and Remove Jobs and Targets via UI.
 - **Validation**: Automatically validates configuration using `promtool` before saving.
 - **Safety**: Prevents saving invalid configurations using a temporary file check.
+- **Security**:
+    - **Basic Authentication**: Simple but effective protection.
+    - **Rate Limiting**: Protects against brute-force attacks.
+    - **Secure Headers**: Uses `helmet` for HTTP security headers.
+    - **Timing Attack Protection**: Safe password comparison.
 - **Auto-Reload**: Triggers Prometheus reload (`/-/reload`) upon successful save.
 - **Lightweight**: Built with Vanilla JS and Node.js. No heavy frontend build steps.
 
@@ -28,6 +33,8 @@ A lightweight, user-friendly web interface to manage Prometheus configuration (`
     PORT=3000
     PROMETHEUS_CONFIG_PATH=./prometheus.conf
     PROMETHEUS_URL=http://localhost:9090
+    AUTH_USER=admin
+    AUTH_PASS=password
     ```
 
 3.  **Run Application**

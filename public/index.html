@@ -11,18 +11,43 @@
 </head>
 <body>
     <div class="app-container">
-        <header>
-            <h1><i class="ph ph-fire"></i> Prometheus Manager</h1>
-            <p>Kelola konfigurasi job dan target dengan mudah.</p>
-        </header>
+        <!-- Login Screen -->
+        <div id="login-screen" class="login-container">
+            <div class="login-card">
+                <h2><i class="ph ph-lock-key"></i> Login</h2>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" required class="input-password">
+                    </div>
+                    <button type="submit" class="btn-primary" style="width:100%">Masuk</button>
+                    <p id="login-error" class="error-text hidden"></p>
+                </form>
+            </div>
+        </div>
 
-        <main id="job-list" class="job-grid">
-            <!-- Jobs will be rendered here -->
-        </main>
+        <!-- Main App (Hidden by default) -->
+        <div id="app-content" class="hidden">
+            <header>
+                <div style="display:flex;justify-content:flex-end;position:absolute;top:1rem;right:1rem;">
+                    <button id="logout-btn" class="btn-secondary btn-small" title="Logout"><i class="ph ph-sign-out"></i> Logout</button>
+                </div>
+                <h1><i class="ph ph-fire"></i> Prometheus Manager</h1>
+                <p>Kelola konfigurasi job dan target dengan mudah.</p>
+            </header>
 
-        <button id="add-job-btn" class="fab" title="Tambah Job Baru">
-            <i class="ph ph-plus"></i>
-        </button>
+            <main id="job-list" class="job-grid">
+                <!-- Jobs will be rendered here -->
+            </main>
+
+            <button id="add-job-btn" class="fab" title="Tambah Job Baru">
+                <i class="ph ph-plus"></i>
+            </button>
+        </div>
     </div>
 
     <!-- Modal for Job Editing -->

@@ -5,16 +5,75 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const { exec } = require('child_process');
 const axios = require('axios');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const crypto = require('crypto');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const CONFIG_PATH = process.env.PROMETHEUS_CONFIG_PATH || './prometheus.conf';
 const PROMETHEUS_URL = process.env.PROMETHEUS_URL || 'http://localhost:9090';
+const AUTH_USER = process.env.AUTH_USER || 'admin';
+const AUTH_PASS = process.env.AUTH_PASS || 'password';
 
+// Security Headers
+app.use(helmet());
+
+// CORS (Allow self)
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static('public'));
+
+// Rate Limiting (General)
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit to 100 requests per window
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+app.use('/api', limiter);
+
+// Login Rate Limiting (Strict)
+const loginLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 5, // 5 attempts per minute
+    message: { error: "Terlalu banyak percobaan login. Coba lagi dalam 1 menit." }
+});
+
+// Auth Middleware
+const checkAuth = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).json({ error: 'Unauthorized: No credentials provided' });
+    }
+
+    try {
+        const auth = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
+        const user = auth[0];
+        const pass = auth[1];
+
+        // Safe Compare
+        const inputUserHash = crypto.createHash('sha256').update(user).digest();
+        const storedUserHash = crypto.createHash('sha256').update(AUTH_USER).digest();
+        const inputPassHash = crypto.createHash('sha256').update(pass).digest();
+        const storedPassHash = crypto.createHash('sha256').update(AUTH_PASS).digest();
+
+        if (crypto.timingSafeEqual(inputUserHash, storedUserHash) && crypto.timingSafeEqual(inputPassHash, storedPassHash)) {
+            next();
+        } else {
+            // Fake delay to further mitigate timing attacks (optional, but good practice)
+            setTimeout(() => res.status(401).json({ error: 'Invalid Credentials' }), 100);
+        }
+    } catch (e) {
+        res.status(401).json({ error: 'Invalid Auth Header' });
+    }
+};
+
+// API: Login Check
+app.post('/api/login', loginLimiter, checkAuth, (req, res) => {
+    res.json({ success: true, message: 'Login berhasil' });
+});
 
 // Helper to read config
 const readConfig = () => {
@@ -142,7 +201,7 @@ const reloadPrometheus = async () => {
 };
 
 // API: Get Config
-app.get('/api/config', (req, res) => {
+app.get('/api/config', checkAuth, (req, res) => {
     try {
         const config = readConfig();
         res.json(config);
@@ -152,7 +211,7 @@ app.get('/api/config', (req, res) => {
 });
 
 // API: Save Config
-app.post('/api/config', async (req, res) => {
+app.post('/api/config', checkAuth, async (req, res) => {
     const tempPath = `${CONFIG_PATH}.tmp`;
     try {
         // 1. Convert to YAML

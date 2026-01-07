@@ -21,20 +21,18 @@ const elements = {
     showAdvanced: document.getElementById('show-advanced'),
     advancedSection: document.getElementById('advanced-section'),
     toast: document.getElementById('toast'),
+    // Login Elements
+    loginScreen: document.getElementById('login-screen'),
+    appContent: document.getElementById('app-content'),
+    loginForm: document.getElementById('login-form'),
+    usernameInput: document.getElementById('username'),
+    passwordInput: document.getElementById('password'),
+    loginError: document.getElementById('login-error'),
+    logoutBtn: document.getElementById('logout-btn'),
 };
 
 // --- Initialization ---
 
-async function fetchConfig() {
-    try {
-        const res = await fetch(API_URL);
-        const data = await res.json();
-        currentConfig = data;
-        renderJobs();
-    } catch (error) {
-        showToast('Gagal memuat konfigurasi: ' + error.message);
-    }
-}
 
 function renderJobs() {
     elements.jobList.innerHTML = '';
@@ -245,27 +243,6 @@ async function deleteJob() {
     }
 }
 
-async function syncConfig() {
-    try {
-        const res = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(currentConfig)
-        });
-        const result = await res.json();
-        if (result.success) {
-            showToast(result.message);
-            renderJobs();
-            return true;
-        } else {
-            throw new Error(result.error);
-        }
-    } catch (error) {
-        alert('Gagal menyimpan: ' + error.message);
-        return false;
-    }
-}
-
 function showToast(msg) {
     elements.toast.textContent = msg;
     elements.toast.classList.remove('hidden');
@@ -291,6 +268,152 @@ elements.showAdvanced.addEventListener('change', (e) => {
         elements.advancedSection.classList.add('hidden');
     }
 });
+
+// --- Authentication ---
+
+function getAuthHeader() {
+    return localStorage.getItem('auth');
+}
+
+function setAuth(user, pass) {
+    const token = btoa(user + ':' + pass);
+    localStorage.setItem('auth', 'Basic ' + token);
+}
+
+function logout() {
+    localStorage.removeItem('auth');
+    toggleLoginScreen(true);
+}
+
+function toggleLoginScreen(show) {
+    if (show) {
+        elements.loginScreen.classList.remove('hidden');
+        elements.appContent.classList.add('hidden');
+        elements.loginForm.reset();
+    } else {
+        elements.loginScreen.classList.add('hidden');
+        elements.appContent.classList.remove('hidden');
+    }
+}
+
+async function login(e) {
+    e.preventDefault();
+    const user = elements.usernameInput.value;
+    const pass = elements.passwordInput.value;
+
+    // Create temp token
+    const tempAuth = 'Basic ' + btoa(user + ':' + pass);
+
+    try {
+        const res = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Authorization': tempAuth }
+        });
+
+        if (res.ok) {
+            setAuth(user, pass);
+            toggleLoginScreen(false);
+            fetchConfig(); // Load data
+        } else {
+            const data = await res.json();
+            throw new Error(data.error || 'Login Failed');
+        }
+    } catch (err) {
+        elements.loginError.textContent = err.message;
+        elements.loginError.classList.remove('hidden');
+    }
+}
+
+// --- Modified Fetch Logic ---
+
+async function fetchConfig() {
+    const auth = getAuthHeader();
+    if (!auth) {
+        toggleLoginScreen(true);
+        return;
+    }
+
+    try {
+        const res = await fetch(API_URL, {
+            headers: { 'Authorization': auth }
+        });
+
+        if (res.status === 401) {
+            logout();
+            return;
+        }
+
+        const data = await res.json();
+        currentConfig = data;
+        renderJobs();
+        toggleLoginScreen(false); // Ensure app is shown
+    } catch (error) {
+        showToast('Gagal memuat konfigurasi: ' + error.message);
+    }
+}
+
+// ... renderJobs ... same as before
+
+// --- Modified Config Manipulation ---
+// syncConfig needs to send auth header
+
+async function syncConfig() {
+    try {
+        const auth = getAuthHeader();
+        const res = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': auth
+            },
+            body: JSON.stringify(currentConfig)
+        });
+
+        if (res.status === 401) {
+            alert("Sesi habis. Silakan login kembali.");
+            logout();
+            return false;
+        }
+
+        const result = await res.json();
+        if (result.success) {
+            showToast(result.message);
+            renderJobs();
+            return true;
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error) {
+        alert('Gagal menyimpan: ' + error.message);
+        return false;
+    }
+}
+
+// ... toast ... same as before
+
+// --- Event Listeners ---
+
+elements.addJobBtn.addEventListener('click', () => openModal(-1));
+elements.closeModal.addEventListener('click', closeModal);
+elements.modal.addEventListener('click', (e) => {
+    if (e.target === elements.modal) closeModal();
+});
+elements.addTargetBtn.addEventListener('click', () => addTargetInput());
+elements.jobForm.addEventListener('submit', saveConfig);
+elements.deleteJobBtn.addEventListener('click', deleteJob);
+
+elements.showAdvanced.addEventListener('change', (e) => {
+    if (e.target.checked) {
+        elements.advancedSection.classList.remove('hidden');
+        document.querySelector('.info-box').innerHTML = '<i class="ph ph-info"></i> Masukkan konfigurasi relabel dalam format JSON Array.';
+    } else {
+        elements.advancedSection.classList.add('hidden');
+    }
+});
+
+// Auth Listeners
+elements.loginForm.addEventListener('submit', login);
+elements.logoutBtn.addEventListener('click', logout);
 
 // Start
 fetchConfig();
